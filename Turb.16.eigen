@@ -1,0 +1,77 @@
+# Paramter file for pushing around eigen vectors.
+
+ProblemType                    = 60           # Which initializer to run.
+TopGridRank                    = 3            # 3 dimensional
+TopGridDimensions              = 16 16 16     # 16^3
+#DomainLeftEdge                 = 0.0 0.0 0.0  # Coordinates.
+DomainRightEdge                = 1.0 1.0 1.0  # coordinates
+
+LeftFaceBoundaryCondition      = 3 3 3   // 3 - periodic for hydro
+RightFaceBoundaryCondition     = 3 3 3
+
+TurbulenceSimulationGridLeftEdge[0]  = 0 0 0
+TurbulenceSimulationGridRightEdge[0] = 1 1 1
+
+TurbulenceSimulationDensityName          = density_16.h5
+TurbulenceSimulationVelocity1Name        = x-velocity_16.h5
+TurbulenceSimulationVelocity2Name        = y-velocity_16.h5
+TurbulenceSimulationVelocity3Name        = z-velocity_16.h5
+TurbulenceSimulationMagnetic1Name        = Bx_16.h5
+TurbulenceSimulationMagnetic2Name        = By_16.h5
+TurbulenceSimulationMagnetic3Name        = Bz_16.h5
+TurbulenceSimulationMagnetic3Name        = Bz_16.h5
+TurbulenceSimulationGasPressureName      = GasPressure_16.h5
+
+##other options we don't need right now.
+TurbulenceSimulationNumberOfInitialGrids = 1
+TurbulenceSimulationInitialTemperature   = 1.0  // sound speed, actually
+TurbulenceSimulationInitialDensity       = 1.0
+TurbulenceSimulationInitialMagneticField = 0.0 0.0 0.07071
+#
+RandomForcing                            = 0    
+RandomForcingMachNumber                  = 0.3
+#DataDumpName            = ts_256L0_M6H5_
+
+#
+#  set I/O and stop/start parameters
+#
+
+BAnyl = 1                             #writes some derived quantities.
+StopCycle               = 100000
+#dtDataDump              = 0.0004
+StopTime                = 0.4
+CycleSkipDataDump       = 100
+ParallelRootGridIO      = 1  #good for big runs
+
+#
+#  hydro parameters
+#  The _actual_ solver is the most important thing.
+#
+HydroMethod            = 6
+Gamma                  = 1.666
+CourantSafetyNumber    = 0.3
+
+#Slope limiter 1, Riemann 6, Reconstruction 0 is equivalent to MHDLi = 0 1 6 1 0, as in Paper08
+MHDCTSlopeLimiter      = 1  // Minmod  
+RiemannSolver          = 6  // HLLD
+ReconstructionMethod   = 0  // PLM 
+NumberOfGhostZones     = 5
+#MHD_CT_Method = 1
+IsothermalSoundSpeed   = 1.0
+
+#
+# AMR parameters (maybe later)
+#
+
+#StaticHierarchy = 0
+#MaximumRefinementLevel = 1
+#CellFlaggingMethod = 6
+#RefineByJeansLengthSafetyFactor = 8
+
+#TracerParticleOn = 1
+#TracerParticleCreationLeftEdge = 0 0 0 
+#TracerParticleCreationRightEdge= 1 1 1
+#TracerParticleCreationSpacing = 0.0078125
+#
+#huge_number            = 1e+6
+#tiny_number            = 1e-6
