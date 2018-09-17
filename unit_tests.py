@@ -148,6 +148,7 @@ def test_read_ics(ic_dir="./Runs", plot_dir="./Plots/"):
               'k_mag':True,       #Makes power spectra for each wave.
               'k_proj':True}      #makes an inscrutable plot of K-space
     p49_plot_tools.do_stuff(stuff=data,outdir=plot_dir,**analysis)
+    print("If that looks right, copy Turb.16.eigen and enzo.exe into that directory and run.")
 
 def test_read_outputs(data_dir="./Runs",plot_dir="./Plots",frame=0):
     
