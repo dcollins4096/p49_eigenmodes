@@ -477,11 +477,6 @@ class waves():
 
     def perturb(self,k_rot=None,base_size=None,ampl=1e-6,directory=".", write=True, wave=None, pert_shape='fft',
                   start=True, real_fft=True,single_wave_selector=True):
-        #if self.cubes is None:
-        #    print("no cubes")
-        #else:
-        #    print("keys",self.cubes.keys())
-
 
 
         field_list = ['d','px','py','pz','hx','hy','hz','e']
@@ -536,11 +531,11 @@ class waves():
 #            for f in  field_list: #there is a bug in an earlier numpy.
 #                print("=== pre %3s "%f+str(len(nonzero(self.all_hats[f]))))
 #                print("=== pre %3s "%f+str(nz(self.all_hats[f])))
-            self.hat_box[wave] = self.all_hats
-            print("wave",wave)
-            for mw in self.hat_box:
-                print(' -- %s -- '%mw)
-                print_nz_2(self.hat_box[mw]['d'])
+#            self.hat_box[wave] = self.all_hats
+#            print("wave",wave)
+#            for mw in self.hat_box:
+#                print(' -- %s -- '%mw)
+#                print_nz_2(self.hat_box[mw]['d'])
             for f in  field_list:
                 if 'tmp' in dir():
                     del tmp

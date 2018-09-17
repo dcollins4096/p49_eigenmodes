@@ -12,7 +12,22 @@ field_list_cons = ['d','px','py','pz','hx','hy','hz','e']
 
 wave_list  =['f-', 'a-','s-','c','f+','a+','s+']
 debug = 1
-def chomp(directory, HydroMethod = 4, eigen='rb96'):
+def maxis(inarr,dim):
+    """plot the max of a 3d *inarr* along *dim*"""
+    arr=np.zeros_like(inarr)
+    ok =  inarr>1e-13
+    arr[ok] = inarr[ok]
+    out = np.log(np.max(np.abs(arr),axis=dim))
+    return out
+def mean_min_max(array,fmt=" %5.2f"):
+    mean = fmt%np.mean(array)
+    my_min= " %5.2e"%np.min(array)
+    my_max= " %5.2e"%np.max(array)
+    my_std = " %5.2e"%np.std(array)
+    out = "%s (%s,%s)"%(mean,my_min,my_max)
+    out = "%s (%s)"%(mean,my_std)
+    return out
+def chomp(directory, HydroMethod = 6, eigen='rb96'):
     map_to_label ={'d':'density','vx':'x-velocity','vy':'y-velocity',
                    'vz':'z-velocity',
                    'hx':'Bx','hy':'By','hz':'Bz','p':'GasPressure'}
