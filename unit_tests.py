@@ -4,6 +4,7 @@ Very Basic Intro:
     2.) Make some initial conditions.
     3.) Run with enzo.  
     4.) plot the results.
+    5.) Make directories Plots and Runs.  Long term, they should live elsewhere...
 
 Slightly less basic intro:
     The eigensystem for MHD is defined for one-dimensional waves. 
@@ -166,4 +167,6 @@ def test_read_outputs(data_dir="./Runs",plot_dir="./Plots",frame=0):
 #state = test_mean_state()
 #state = test_two(write=True)
 #test_read_ics()
-test_read_outputs()
+#print("Next copy Turb.16.eigen and enzo.exe to Runs")
+#print("then run")
+#test_read_outputs()
