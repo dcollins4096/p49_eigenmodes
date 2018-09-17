@@ -1,24 +1,51 @@
-"""Here are several test functions for the eigen-vector project.
-Read.  Then horse around.
+"""
+Very Basic Intro:
+    1.) Make directories for runs and plots.  Don't leave them in this directory.
+    2.) Make some initial conditions.
+    3.) Run with enzo.  
+    4.) plot the results.
+
+Slightly less basic intro:
+    The eigensystem for MHD is defined for one-dimensional waves. 
+    We start with a uniform background state, with \rho, \vec{v}, \vec{B}, Pressure.
+    We then pick a wave vector, K.  That's the new X direction. We'll call this coordinate 
+    system ABC, where A is along K.
+    We refer to the coordinates that Enzo uses as XYZ.
+    We rotate our uniform state to ABC.  Then we perturb it with a Wave (fast, slow, alfven, etc)
+    Then we rotate back to XYZ.  This let's us go from Wave Space to Physical Space.
+
+    To go from Physical Space to Wave Space:
+    We decompose physical state (density, momentum, field, pressure) to waves,
+    (fast,slow, etc.) by doing the following:
+        1.) Perform a Fourier Transform of all the Physical variables.
+        2.) This gives us an amplitude for each of the Wave Vectors.
+        3.) At each point in WaveSpace, rotate the physical XYZ quantity to ABC.
+        4.) Multiply the Physical Amplitude by the Left Eigen System.  Then you get waves.
+
+
+Here are several test functions for the eigen-vector project.
+Read the functions.  Then horse around.  Don't change these functions, write new ones.
 Not everything works all that great.  You might need to fix stuff.
 
-There are two formulations of the eigen system, "rj95" and "rb96".  
-We'll use rb96 always.  There are minor differences.
+Some odd details:
+    There are two formulations of the eigen system, "rj95" and "rb96".  
+    We'll use rb96 always.  There are minor differences.
 
-In several places the field needs to be written with the right label, so Enzo can read it.
+    In several places the field needs to be written with the right label, so Enzo can read it.
 
-px,py,pz is momentum.
-hx,hy,hz is magnetic field.
-There's a tool called "fieldthing" that takes care of keeping momentum and density consistent.
-Access is kind of like a dictionary, but I haven't fully fleshed out the object.
-
-
+    px,py,pz is momentum.
+    hx,hy,hz is magnetic field.
+    There's a tool called "fieldthing" that takes care of keeping momentum and density consistent.
+    Access is kind of like a dictionary, but I haven't fully fleshed out the object.
 
 """
+
 from go_lite_pyt3 import *
+import yt
 import enzo_write
 reload(enzo_write)
 import p49_eigen
+reload(p49_eigen)
 import p49_plot_tools
 reload(p49_plot_tools)
 from p49_print_tools import *
@@ -33,7 +60,6 @@ class miscellaneous_things():
 def test_mean_state(state=None):
     """one vector along \hat{x}, one along \hat{z}, left-going fast wave."""
     
-    reload(p49_eigen)
     t=miscellaneous_things()
 
     #The mean background state.  rho=1, \vec{v}=0,0,0, gamma=5./3
@@ -122,20 +148,21 @@ def test_read_ics(ic_dir="./Runs", plot_dir="./Plots/"):
               'k_mag':True,       #Makes power spectra for each wave.
               'k_proj':True}      #makes an inscrutable plot of K-space
     p49_plot_tools.do_stuff(stuff=data,outdir=plot_dir,**analysis)
-state = test_mean_state()
-state = test_two(write=True)
-test_read_ics()
 
-def test_temp_fft(ic_dir="./Runs", plot_dir="./Plots/"):
-    """read in initial conditions from *ic_dir*.
-    Make some plots in *plot_dir*
-    p49_plot_tools.chomp consumes the initial data files in *ic_dir*
-    p49_plot_tools.do_stuff makes several figures, based on the arguments.
-    Here we use a fun trick of double-asterisk to pass in a bunch of keyword args."""
-    data = p49_plot_tools.chomp(ic_dir)
-    ffts = p49_eigen.get_ffts(data['cubes'])
-    return data, ffts
-
-ics = test_temp_fft()
-
-
+def test_read_outputs(data_dir="./Runs",plot_dir="./Plots",frame=0):
+    
+    ds_fname = "%s/DD%04d/data%04d"%(data_dir,frame,frame)
+    prefix="RunTest"
+    ds = yt.load(ds_fname)
+    stuff = p49_eigen.get_cubes_cg(ds)
+    analysis={'print_wave':False,
+              'plot_fields':1,
+              'k_mag':1,
+              'k_proj':1,
+              'k_func':maxis
+             }
+    p49_plot_tools.do_stuff(stuff=stuff,outdir="%s/%s_%04d_"%(plot_dir,prefix,frame),**analysis)
+#state = test_mean_state()
+#state = test_two(write=True)
+#test_read_ics()
+test_read_outputs()

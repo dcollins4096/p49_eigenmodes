@@ -20,29 +20,33 @@ def maxis(inarr,dim):
     out = np.log(np.max(np.abs(arr),axis=dim))
     return out
 def mean_min_max(array,fmt=" %5.2f"):
+    """print some statistics."""
     mean = fmt%np.mean(array)
     my_min= " %5.2e"%np.min(array)
     my_max= " %5.2e"%np.max(array)
     my_std = " %5.2e"%np.std(array)
-    out = "%s (%s,%s)"%(mean,my_min,my_max)
-    out = "%s (%s)"%(mean,my_std)
+    out = "%s (%s,%s)+- %s"%(mean,my_min,my_max,my_std)
     return out
-def chomp(directory, HydroMethod = 6, eigen='rb96'):
+
+def read_initial_conditions(directory, HydroMethod = 6, formulation='rb96'):
+    """Read the datasets from *directory* that were written for Enzo.
+    HydroMethod and formulation change the shape and style of the data"""
     map_to_label ={'d':'density','vx':'x-velocity','vy':'y-velocity',
                    'vz':'z-velocity',
                    'hx':'Bx','hy':'By','hz':'Bz','p':'GasPressure'}
-    if eigen == 'rj95':
+    if formulation == 'rj95':
         map_to_label ={'d':'density','vx':'x-velocity','vy':'y-velocity',
                        'vz':'z-velocity',
                        'hx':'Bx','hy':'By','hz':'Bz','e':'TotalEnergy'}
     stuff = {'cubes':p49_eigen.fieldthing(),'means':p49_eigen.fieldthing()}
+    set_suffix = '_16'
     for field in map_to_label:
-        setname = "%s_16.h5"%map_to_label[field]
+        setname = "%s%s.h5"%(map_to_label[field],set_suffix)
         fname = "%s/%s"%(directory,setname)
         if debug > 0:
             print("read %s"%fname)
         if not os.path.exists(fname):
-            print("oh no i'm going to fail. No file %s"%fname)
+            print("oh no i'm going to fail. I cannot find the file %s"%fname)
         fptr = h5py.File(fname,'r')
         cube = fptr[setname][:]
         if HydroMethod == 6 and field in ['hx','hy','hz']:
@@ -55,21 +59,22 @@ def chomp(directory, HydroMethod = 6, eigen='rb96'):
         stuff['means'][field] = np.mean(stuff['cubes'][field])
     these_means = stuff['means']
     these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means)
-    kall,mwut=p49_eigen.rotate_back(these_ffts, these_means)
+    kall,waveset=p49_eigen.rotate_back(these_ffts, these_means)
     stuff['kall']=kall
-    stuff['wut']=mwut
+    stuff['waveset']=waveset
     return stuff
 
-def print_wave_content(mwut=None,stuff=None):
+def print_wave_content(waveset=None,stuff=None):
+    """Print the total power in each of the wave families."""
 
-    if mwut is None:
+    if waveset is None:
         these_means = stuff['means']
         these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means)
-        kall,mwut=p49_eigen.rotate_back(these_ffts, these_means)
+        kall,waveset=p49_eigen.rotate_back(these_ffts, these_means)
     plt.clf()
     ymax=0
     for wave in wave_list:
-        this_fft = mwut.wave_content[wave]
+        this_fft = waveset.wave_content[wave]
         power = this_fft*this_fft.conj()
         ff = Filter.FourierFilter(power)
         power_1d = np.array([power[ff.get_shell(bin)].sum() for bin in range(ff.nx)])
@@ -79,21 +84,22 @@ def print_wave_content(mwut=None,stuff=None):
         #print("ampl wave %3s this_max %0.2e all maxx %0.2e"%(wave, power_1d.max(), ymax))
 
         vvv = power_1d.max()
-        vvv = mwut.wave_content[wave].max()
-        vvv = np.abs(mwut.wave_content[wave]).max()
-        if vvv > 1e-12:
+        vvv = waveset.wave_content[wave].max()
+        vvv = np.abs(waveset.wave_content[wave]).max()
+        if vvv > 1e-13:
             max_str = "%5.2e"%vvv
         else:
             max_str = "%5s"%"-"
         print("ampl wave %3s this_max %s "%(wave, max_str))
 ##
-def plot_wave_mag(mwut=None,stuff=None,output_name="thig.png", nbins=None):
+def plot_wave_mag(waveset=None,stuff=None,output_name="thig.png", nbins=None):
+    """plot the magnitude of the power for each wave set."""
 
     real=True
-    if mwut is None:
+    if waveset is None:
         these_means = stuff['means']
         these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means, real=real)
-        kall,mwut=p49_eigen.rotate_back(these_ffts, these_means,real=real)
+        kall,waveset=p49_eigen.rotate_back(these_ffts, these_means,real=real)
     kmag = np.sqrt(kall[0,...]**2+kall[1,...]**2+kall[2,...]**2)
     if nbins is None:
         nbins = kmag.shape[0]
@@ -112,8 +118,10 @@ def plot_wave_mag(mwut=None,stuff=None,output_name="thig.png", nbins=None):
     p1d['kmag']=kmag
     
     print("==== wave power ====")
+    color = {'f-':'r','f+':'r','s+':'g','s-':'g','a+':'b','a-':'b','c':'m'}
+    line = {'f-':'--','f+':'-','s+':'-','s-':'--','a+':'-','a-':'--','c':'-'}
     for wave in  ['f-', 'a-','s-','c','f+','a+','s+']:
-        this_fft = mwut.wave_content[wave]
+        this_fft = waveset.wave_content[wave]
         p1d['ug']=this_fft
         power_complex = (this_fft*this_fft.conj())
         power=power_complex.real
@@ -126,7 +134,7 @@ def plot_wave_mag(mwut=None,stuff=None,output_name="thig.png", nbins=None):
         else:
             max_str = "%5s"%"-"
         print("ampl wave %3s this_max %s"%(wave, max_str))
-        plt.plot(bin_center,power_1d,label=wave)
+        plt.plot(bin_center,power_1d,label=wave, c=color[wave],linestyle=line[wave])
         p1d[wave]=power_1d
         nz1 = nonzero(power_1d)
         ymax=max([ymax,power_1d.max()])
@@ -136,20 +144,20 @@ def plot_wave_mag(mwut=None,stuff=None,output_name="thig.png", nbins=None):
     plt.savefig(output_name)
     print(output_name)
     return p1d
-def plot_wave_mag_fourtool(mwut=None,stuff=None,output_name="thig.png"):
+def plot_wave_mag_fourtool(waveset=None,stuff=None,output_name="thig.png"):
     #kinda busted
 
     real=True
-    if mwut is None:
+    if waveset is None:
         these_means = stuff['means']
         these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means, real=real)
-        kall,mwut=p49_eigen.rotate_back(these_ffts, these_means,real=real)
+        kall,waveset=p49_eigen.rotate_back(these_ffts, these_means,real=real)
     kmag = np.sqrt(kall[0,...]**2+kall[1,...]**2+kall[2,...]**2)
     plt.clf()
     ymax=0
     p1d={}
     for wave in ['f+']:# ['f-', 'a-','s-','c','f+','a+','s+']:
-        this_fft = mwut.wave_content[wave]
+        this_fft = waveset.wave_content[wave]
         #this_fft = np.ones_like(this_fft)
         power = (this_fft*this_fft.conj()).real
         ff = Filter.FourierFilter(power)
@@ -176,11 +184,13 @@ def plot_wave_mag_fourtool(mwut=None,stuff=None,output_name="thig.png"):
     return p1d
 
 
-def plot_k_rad(wut=None, stuff=None,prefix="THING", this_format='png'):
-    if wut is None:
+def plot_k_rad(waveset=None, stuff=None,prefix="THING", this_format='png'):
+    """Plots wave vectors in polar coordinates.
+    Doesn't really work yet.  Not necessarily a bad idea, though."""
+    if waveset is None:
         these_means = stuff['means']
         these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means)
-        kall,wut=p49_eigen.rotate_back(these_ffts, these_means)
+        kall,waveset=p49_eigen.rotate_back(these_ffts, these_means)
     for wave in ['f-', 'a-','s-','c','f+','a+','s+']:
         fig = plt.figure(figsize=(8,8)) # Notice the equal aspect ratio
         fig.suptitle('%s %s'%(prefix,wave))
@@ -193,7 +203,7 @@ def plot_k_rad(wut=None, stuff=None,prefix="THING", this_format='png'):
             a.set_aspect('equal')
 
 
-        this_fft = wut.wave_content[wave]
+        this_fft = waveset.wave_content[wave]
         all_angle = np.angle(this_fft)
         flag = np.abs(this_fft) > 1e-9
         this_kmag = kmag[flag]
@@ -292,14 +302,14 @@ def six_plot(array, oname='moo.png', title='', img_args=default_imshow, func=def
     if debug > 0:
         print('wrote %s'%oname)
 
-def plot_k_proj(wut=None,stuff=None,prefix="THING", this_format='png', func=default_proj_func):
-    if wut is None:
+def plot_k_proj(waveset=None,stuff=None,prefix="THING", this_format='png', func=default_proj_func):
+    if waveset is None:
         these_means = stuff['means']
         these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means)
-        kall,wut=p49_eigen.rotate_back(these_ffts, these_means)
+        kall,waveset=p49_eigen.rotate_back(these_ffts, these_means)
     setup = False
     for wave in ['f-', 'a-','s-','c','f+','a+','s+']:
-        cube =wut.wave_content[wave] 
+        cube =waveset.wave_content[wave] 
         for cube_part in [cube.real,cube.imag]:
             for dim in [0,1,2]:
                 this_fft = func(cube_part,dim=dim)
@@ -318,7 +328,7 @@ def plot_k_proj(wut=None,stuff=None,prefix="THING", this_format='png', func=defa
                 #print("range ",all_max, nonzero_min)
 
     for wave in ['f-', 'a-','s-','c','f+','a+','s+']:
-        this_fft = wut.wave_content[wave]
+        this_fft = waveset.wave_content[wave]
         this_title = '%s %s'%(prefix,wave)
         img_args={ 'origin':'lower','interpolation':'nearest'}
         img_args['norm'] = colors.Normalize(vmin=nonzero_min,vmax=all_max)
