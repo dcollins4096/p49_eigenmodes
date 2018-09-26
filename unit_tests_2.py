@@ -16,11 +16,12 @@ class miscellaneous_things():
         self.field_list = ['d','px','py','pz','hx','hy','hz','p']
         self.form_s = " %5s"
         self.form_f = " %5.2f"
+
 t=miscellaneous_things()
 def test_k_array_simple(state=None,WRITE=False, directory ='./Run/' ):
     if state is None:
         state = p49_eigen.waves(hx=1.0,hy=1.41421,hz=0.5,p=0.6,this_wave="f-")
-    size = 32
+    size = 16
     ks = p49_eigen.make_k_freqs_and_int(size)
     k3 = ks['k_freq']
     kint = ks['k_int']
@@ -49,8 +50,8 @@ def test_k_array_simple(state=None,WRITE=False, directory ='./Run/' ):
     return state, these_ffts
 def test_k_array_powers(state=None,WRITE=False, directory ='./Run/' ):
     if state is None:
-        state = p49_eigen.waves(hx=1.0,hy=1.41421,hz=0.5,p=0.6,this_wave="f-")
-    size = 32
+        state = p49_eigen.waves(hx=1.0,hy=1.41421,hz=0.5,p=0.6,this_wave="f-", HydroMethod=4)
+    size = 16
     ks = p49_eigen.make_k_freqs_and_int(size)
     k3 = ks['k_freq']
     kint = ks['k_int']
@@ -71,6 +72,7 @@ def test_k_array_powers(state=None,WRITE=False, directory ='./Run/' ):
                       wave=wave, start=True,write=WRITE, single_wave_selector=False)
     these_ffts  = p49_eigen.get_ffts(state.cubes, means={})
     return state, these_ffts
-state, mask=test_k_array_powers(directory = './Run2', WRITE=True)
-unit_tests.test_read_ics(ic_dir="./Run2",plot_dir="./Vis2/")
-#unit_tests.test_read_outputs(data_dir="./Run2",plot_dir="./Vis2")
+#state, mask=test_k_array_powers(directory = './Run2', WRITE=True)
+#ic_stuff=unit_tests.test_read_ics(ic_dir="./Run2",plot_dir="./Vis2/")
+for frame in [0,1]:
+    read_stuff=unit_tests.test_read_outputs(data_dir="./Run2",plot_dir="./Vis2/",frame=frame)

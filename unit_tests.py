@@ -41,16 +41,7 @@ Some odd details:
 
 """
 
-from go_lite_pyt3 import *
-import yt
-import enzo_write
-reload(enzo_write)
-import p49_eigen
-reload(p49_eigen)
-import p49_plot_tools
-reload(p49_plot_tools)
-from p49_print_tools import *
-
+from starter import *
 class miscellaneous_things():
     def __init__(self):
         self.wave_list=['f-', 'a-','s-','c','f+','a+','s+']
@@ -148,22 +139,29 @@ def test_read_ics(ic_dir="./Runs", plot_dir="./Plots/"):
               'k_func':p49_plot_tools.maxis,     #The projection function for the above.
               'k_mag':True,       #Makes power spectra for each wave.
               'k_proj':True}      #makes an inscrutable plot of K-space
-    p49_plot_tools.do_stuff(stuff=data,outdir=plot_dir,**analysis)
+    p49_plot_tools.do_stuff(data,outdir=plot_dir,**analysis)
     print("If that looks right, copy Turb.16.eigen and enzo.exe into that directory and run.")
+    return data
 
+def check_dir_make(dirname):
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
 def test_read_outputs(data_dir="./Runs",plot_dir="./Plots",frame=0):
     
     ds_fname = "%s/DD%04d/data%04d"%(data_dir,frame,frame)
     prefix="RunTest"
     ds = yt.load(ds_fname)
-    stuff = p49_eigen.get_cubes_cg(ds)
+    data = p49_eigen.get_cubes_cg(ds)
     analysis={'print_wave':False,
               'plot_fields':1,
               'k_mag':1,
               'k_proj':1,
               'k_func':maxis
              }
-    p49_plot_tools.do_stuff(stuff=stuff,outdir="%s/%s_%04d_"%(plot_dir,prefix,frame),**analysis)
+    this_plot_dir = "%s/%04d"%(plot_dir,frame)
+    check_dir_make(this_plot_dir)
+    p49_plot_tools.do_stuff(data,outdir="%s/%s_%04d_"%(this_plot_dir,prefix,frame),**analysis)
+    return data
 #state = test_mean_state()
 #state = test_two(write=True)
 #test_read_ics()

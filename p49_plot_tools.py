@@ -28,7 +28,7 @@ def mean_min_max(array,fmt=" %5.2f"):
     out = "%s (%s,%s)+- %s"%(mean,my_min,my_max,my_std)
     return out
 
-def read_initial_conditions(directory, HydroMethod = 6, formulation='rb96'):
+def read_initial_conditions(directory, HydroMethod = 4, formulation='rb96'):
     """Read the datasets from *directory* that were written for Enzo.
     HydroMethod and formulation change the shape and style of the data"""
     map_to_label ={'d':'density','vx':'x-velocity','vy':'y-velocity',
@@ -38,7 +38,7 @@ def read_initial_conditions(directory, HydroMethod = 6, formulation='rb96'):
         map_to_label ={'d':'density','vx':'x-velocity','vy':'y-velocity',
                        'vz':'z-velocity',
                        'hx':'Bx','hy':'By','hz':'Bz','e':'TotalEnergy'}
-    stuff = {'cubes':p49_eigen.fieldthing(),'means':p49_eigen.fieldthing()}
+    data = {'cubes':p49_eigen.fieldthing(),'means':p49_eigen.fieldthing()}
     set_suffix = '_16'
     for field in map_to_label:
         setname = "%s%s.h5"%(map_to_label[field],set_suffix)
@@ -55,14 +55,10 @@ def read_initial_conditions(directory, HydroMethod = 6, formulation='rb96'):
             cubic_slice = [slice(cube.shape[0]),slice(cube.shape[1]),slice(cube.shape[2])]
 
             
-        stuff['cubes'][field]=cube.swapaxes(0,2)
-        stuff['means'][field] = np.mean(stuff['cubes'][field])
-    these_means = stuff['means']
-    these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means)
-    kall,waveset=p49_eigen.rotate_back(these_ffts, these_means)
-    stuff['kall']=kall
-    stuff['waveset']=waveset
-    return stuff
+        data['cubes'][field]=cube.swapaxes(0,2)
+        data['means'][field] = np.mean(data['cubes'][field])
+    data=p49_eigen.make_waveset(data)
+    return data
 
 def print_wave_content(waveset=None,stuff=None):
     """Print the total power in each of the wave families."""
@@ -92,14 +88,16 @@ def print_wave_content(waveset=None,stuff=None):
             max_str = "%5s"%"-"
         print("ampl wave %3s this_max %s "%(wave, max_str))
 ##
-def plot_wave_mag(waveset=None,stuff=None,output_name="thig.png", nbins=None):
+def plot_wave_mag(data,output_name="thig.png", nbins=None):
     """plot the magnitude of the power for each wave set."""
 
     real=True
-    if waveset is None:
-        these_means = stuff['means']
-        these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means, real=real)
-        kall,waveset=p49_eigen.rotate_back(these_ffts, these_means,real=real)
+    #if waveset is None:
+    #    these_means = stuff['means']
+    #    these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means, real=real)
+    #    kall,waveset=p49_eigen.rotate_back(these_ffts, these_means,real=real)
+    kall = data['kall']
+    waveset=data['waveset']
     kmag = np.sqrt(kall[0,...]**2+kall[1,...]**2+kall[2,...]**2)
     if nbins is None:
         nbins = kmag.shape[0]
@@ -215,7 +213,7 @@ def plot_k_rad(waveset=None, stuff=None,prefix="THING", this_format='png'):
         fig.savefig(oname)
         print(oname)
 
-def plot_var_fields(stuff=None,prefix="A_PLOT",this_format='png',
+def plot_var_fields(data,prefix="A_PLOT",this_format='png',
                    do = 'slice'):
     field_list=field_list_prim
     Nx = len('xyz')
@@ -239,7 +237,7 @@ def plot_var_fields(stuff=None,prefix="A_PLOT",this_format='png',
     oots=[None]*len(ax)
 
     for nf,field in enumerate(field_list):
-        this_field = stuff['cubes'][field]
+        this_field = data['cubes'][field]
         nplt = nar([0,1,2])+nf*3
         for dim in [0,1,2]:
             if do == 'std_proj':
@@ -249,7 +247,7 @@ def plot_var_fields(stuff=None,prefix="A_PLOT",this_format='png',
                 this_slice[dim]=this_field.shape[dim]//2
                 my_dims = list(this_field.shape)
                 my_dims.pop(dim)
-                this_proj=this_field[this_slice]
+                this_proj=this_field[tuple(this_slice)]
                 this_proj.shape=my_dims
             #print("var %3s ax %d range(%0.2e %0.2e)"%(field,dim,
             #                        this_proj.min(),this_proj.max()))
@@ -337,28 +335,29 @@ def plot_k_proj(waveset=None,stuff=None,prefix="THING", this_format='png', func=
         oname = '%s_%s_yz.%s'%(prefix, wave, this_format)
         six_plot(this_fft,oname=oname,title=this_title,img_args=img_args, func=func)
 
-def do_stuff(print_wave=False,plot_fields=False,k_mag=False,k_proj=False,
-             outdir=".", stuff=None,k_func=default_proj_func):
+def do_stuff(data,print_wave=False,plot_fields=False,k_mag=False,k_proj=False,
+             outdir=".", k_func=default_proj_func):
 
     od=outdir
+
     if print_wave:
         print("=== wave content ===")
-        print_wave_content(stuff=stuff)
+        print_wave_content(waveset=data['waveset'])
 
     if plot_fields:
         print("=== plot fields ===")
         prefix = "%s%s"%(od,"fields")
 
-        plot_var_fields(stuff=stuff, prefix=prefix, do='slice')
+        plot_var_fields(data,prefix=prefix, do='slice')
 
     if k_proj:
         print("=== k proj === ")
         prefix = "%s%s"%(od,"K")
-        plot_k_proj(stuff=stuff, prefix=prefix, func=k_func)
+        plot_k_proj(waveset=data['waveset'], prefix=prefix, func=k_func)
 
     if k_mag:
         print("=== k mag ===")
         prefix = "%sMag.png"%od
-        p1d=plot_wave_mag(stuff=stuff,output_name=prefix)
+        p1d=plot_wave_mag(data,output_name=prefix)
         #print_wave_content(stuff=stuff)
 

@@ -59,49 +59,7 @@ def wrap_faces(array,field):
 #def to_ft(fields,mean={}):
 #    field_list = ['d','vx','vy','vz','hx','hy','hz','p']
 #    for field in 
-def get_cubes_cg(ds,mean={}):
-    print(ds['DomainLeftEdge'].astype('float'))
-    cg = ds.covering_grid(0,ds['DomainLeftEdge'].astype('float'),ds['TopGridDimensions'])
-    field_list = ['d','vx','vy','vz','hx','hy','hz','p']
-    map_to_label ={'d':'density','vx':'x-velocity','vy':'y-velocity','vz':'z-velocity',
-                   'hx':'Bx','hy':'By','hz':'Bz','e':'TotalEnergy','p':'pressure'}
-    cubes=fieldthing()
-    means=fieldthing()
-    for field in field_list:
-        cubes[field] = cg[map_to_label[field] ].v
-        means[field] = np.mean( cubes[field])
-    for field in ['px','py','pz']:
-        means[field] = cubes[field].mean()
-    #then get momentum.
-    means['Gamma']=ds['Gamma']
-    return {'cubes':cubes, 'means':means}
-
-def get_ffts(cubes, means={}, real=True):
-    field_list = ['d','px','py','pz','hx','hy','hz','p']
-    if real:
-        the_fft = np.fft.rfftn
-    else:
-        the_fft = np.fft.fftn
-    if means == 'get':
-        means={}
-        for field in field_list:
-            means[field] = np.mean(cubes[field])
-
-    ffts = fieldthing()
-
-    kludge={}
-    for field in field_list:
-        this_cube = cubes[field]-means.get(field,0)
-        #if field in ['vx','vy','vz']:
-        #    this_cube *= cubes['d']
-        #kludge[field]=this_cube
-
-        ffts[field] = the_fft(this_cube)/(np.size(this_cube))/should_i_half #half?
-
-    return ffts
-
 def make_k_freqs_2d(nk):
-
     k_freq = np.zeros([2,nk,nk])
     k1=np.fft.fftfreq(nk,d=1)
     #kx, ky, kz = np.meshgrid(k1,k1,k1)
@@ -149,6 +107,76 @@ def make_k_freqs_and_int(nk,real=True):
     k_freq = make_k_freqs(nk,real=real)
     k_int = make_k_freqs(nk,real=real,d=1./nk)
     return {'k_freq':k_freq,'k_int':k_int}
+def make_waveset(data):
+    #Start with XYZ: data['cubes']
+    #hat(XYZ): FFT of real data.  data['ffts'], with get_ffts
+    #hat(ABC): Rotated FFT data. data['waveset'].wave_frame
+    #hat(FSA): Eigen vectors in FFT space.  data['waveset'].wave_content
+    #
+    #Also created: waveset.hat_system, contains eigen vectors
+    #              waveset.a_unit, b_unit, c_unit: unit vectors.
+    # Call order:
+    #        rotate_back; makes K vectors, calls;;
+    #           this_system = waves(mean)
+    #           this_system.project_to_waves(k_all, ffts, means={})
+    #              this_system.fields_to_wave_frame(k_all_in,fields=ffts)
+    #                +this_system.wave_frame (another system)
+    #                +this_system.a_unit, b_unit, c_unit, B0hat
+    #                +this_system.hat_system (rotated)
+    #                +this_system.wave_content = self.to_waves; to wave frame.
+    #                       (self.wave_frame * self.hat_system.left)
+    #waveset.wave_frame = hat(ABC)
+    #waveset.hat_system = hat(ABC) eigen system
+    #waveset.wave_content = hat(FSA) wave system.
+    #waveset.a_unit, b_unit, c_unit
+    data['ffts']  = get_ffts(data['cubes'], data['means'])
+    kall,waveset=rotate_back(data['ffts'], data['means'])
+    data['kall']=kall
+    data['waveset']=waveset
+    return data
+def get_cubes_cg(ds,mean={}):
+    print(ds['DomainLeftEdge'].astype('float'))
+    cg = ds.covering_grid(0,ds['DomainLeftEdge'].astype('float'),ds['TopGridDimensions'])
+    field_list = ['d','vx','vy','vz','hx','hy','hz','p']
+    map_to_label ={'d':'density','vx':'x-velocity','vy':'y-velocity','vz':'z-velocity',
+                   'hx':'Bx','hy':'By','hz':'Bz','e':'TotalEnergy','p':'pressure'}
+    cubes=fieldthing()
+    means=fieldthing()
+    for field in field_list:
+        cubes[field] = cg[map_to_label[field] ].v
+        means[field] = np.mean( cubes[field])
+    for field in ['px','py','pz']:
+        means[field] = cubes[field].mean()
+    #then get momentum.
+    means['Gamma']=ds['Gamma']
+    data={'cubes':cubes, 'means':means}
+    data = make_waveset(data)
+    return data
+
+def get_ffts(cubes, means={}, real=True):
+    field_list = ['d','px','py','pz','hx','hy','hz','p']
+    if real:
+        the_fft = np.fft.rfftn
+    else:
+        the_fft = np.fft.fftn
+    if means == 'get':
+        means={}
+        for field in field_list:
+            means[field] = np.mean(cubes[field])
+
+    ffts = fieldthing()
+
+    kludge={}
+    for field in field_list:
+        this_cube = cubes[field]-means.get(field,0)
+        #if field in ['vx','vy','vz']:
+        #    this_cube *= cubes['d']
+        #kludge[field]=this_cube
+
+        ffts[field] = the_fft(this_cube)/(np.size(this_cube))/should_i_half #half?
+
+    return ffts
+
 def rotate_back(ffts,means, real=True):
 
     the_means = means
@@ -160,8 +188,6 @@ def rotate_back(ffts,means, real=True):
     k_all = make_k_freqs(size[0], real=real)
     
     #rotate from xyz to abc
-    #this_system.fields_to_wave_frame(k_all, ffts,means={})
-    #this_system.project_to_waves(k_all, ffts=ffts, means={})
     this_system.project_to_waves(k_all, ffts, means={})
 
     return k_all, this_system
@@ -433,7 +459,7 @@ class waves():
         self.hat_system=hat_system
 
     def __init__(self, d=1.0,vx=0.0,vy=0.0,vz=0.0,hx=1.0,hy=1.41421,hz=0.5,Gamma=1.6666666667,e=None,p=None, write=True,
-                 form='rb96', HydroMethod=6, **kwargs):
+                 form='rb96', HydroMethod=4, **kwargs):
         #p = 0.6
         #Gamma=1.6666666667
         self.HydroMethod = HydroMethod
@@ -642,6 +668,8 @@ class waves():
         cs =np.sqrt( 0.5*( aa*aa + 2*bp/d -np.sqrt( pow( (aa*aa + 2*bp/d ),2) - 4* aa*aa*bx*bx/d ) ) );
         ca =np.sqrt( bx*bx/d ); 
         cf =np.sqrt( 0.5*( aa*aa + 2*bp/d +np.sqrt( pow( (aa*aa + 2*bp/d ),2) - 4* aa*aa*bx*bx/d ) ) );
+        #print("yay 5", Gamma)
+        #self.thing1 =  p #aa# (aa*aa )#+ 2*bp/d ) #- 4* aa*aa*bx*bx/d 
         
         #compute ancilary values
         #The normalization of alph_f may change. This normalization uses Ryu
