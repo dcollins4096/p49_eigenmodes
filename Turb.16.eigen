@@ -37,7 +37,8 @@ RandomForcingMachNumber                  = 0.3
 #
 
 BAnyl = 1                             #writes some derived quantities.
-StopCycle               = 100000
+#StopCycle               = 3 #100000
+#CycleSkipDataDump = 1
 #dtDataDump              = 0.0004
 StopTime                = 0.4
 CycleSkipDataDump       = 100
@@ -47,8 +48,8 @@ ParallelRootGridIO      = 1  #good for big runs
 #  hydro parameters
 #  The _actual_ solver is the most important thing.
 #
-HydroMethod            = 6
-Gamma                  = 1.666
+HydroMethod            = 4
+Gamma                  = 1.6666666667
 CourantSafetyNumber    = 0.3
 
 #Slope limiter 1, Riemann 6, Reconstruction 0 is equivalent to MHDLi = 0 1 6 1 0, as in Paper08
