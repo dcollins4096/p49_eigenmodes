@@ -149,7 +149,6 @@ def PlotQUEB(Q,U,E,B, outname = 'QUEB_plot.png'):
 Spiral=SpiralQU(Nzones=64)
 QUEB=QU_TO_EB(Spiral['Q'],Spiral['U'])
 PlotQUEB(Spiral['Q'],Spiral['U'],QUEB.E,QUEB.B,outname='Spiral_64.png')
-print("butts")
 def plot_HxHy(Spiral):
     plt.close('all')
     args={'interpolation':'nearest','origin':'lower'}
