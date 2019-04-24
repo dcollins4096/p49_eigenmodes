@@ -3,13 +3,13 @@ import numpy as np
 sfrm = "%12s"
 if 'thresh' not in dir():
     thresh = 1e-11
-def nz(arr):
+def nz(arr, thresh=thresh):
     return  np.where(np.abs(arr) > thresh)
-def nonzero(arr):
-    return arr[ nz(arr)]
-def pnz(arr):
-    print(arr[ nz(arr)])
-    print(nz(arr))
+def nonzero(arr, thresh=thresh):
+    return arr[ nz(arr, thresh=thresh)]
+def pnz(arr, thresh=thresh):
+    print(arr[ nz(arr, thresh=thresh)])
+    print(nz(arr, thresh=thresh))
 cf = '({0.real:5.2e} + {0.imag:5.2e}i)'
 def ampl_str(arr):
     out = ""

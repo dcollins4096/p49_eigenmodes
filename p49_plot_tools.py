@@ -28,7 +28,7 @@ def mean_min_max(array,fmt=" %5.2f"):
     out = "%s (%s,%s)+- %s"%(mean,my_min,my_max,my_std)
     return out
 
-def read_initial_conditions(directory, HydroMethod = 4, formulation='rb96'):
+def read_initial_conditions(directory, HydroMethod = 4, formulation='rb96', file_suffix = '_16'):
     """Read the datasets from *directory* that were written for Enzo.
     HydroMethod and formulation change the shape and style of the data"""
     map_to_label ={'d':'density','vx':'x-velocity','vy':'y-velocity',
@@ -39,9 +39,8 @@ def read_initial_conditions(directory, HydroMethod = 4, formulation='rb96'):
                        'vz':'z-velocity',
                        'hx':'Bx','hy':'By','hz':'Bz','e':'TotalEnergy'}
     data = {'cubes':p49_eigen.fieldthing(),'means':p49_eigen.fieldthing()}
-    set_suffix = '_16'
     for field in map_to_label:
-        setname = "%s%s.h5"%(map_to_label[field],set_suffix)
+        setname = "%s%s.h5"%(map_to_label[field],file_suffix)
         fname = "%s/%s"%(directory,setname)
         if debug > 0:
             print("read %s"%fname)
@@ -90,6 +89,13 @@ def print_wave_content(waveset=None,stuff=None):
 ##
 def plot_wave_mag(data,output_name="thig.png", nbins=None):
     """plot the magnitude of the power for each wave set."""
+    #db: poke around with the data object that gets passed in to "do_stuff"
+    #    Copy this function to "plot_physics_mag", and make these changes.
+    #    find the 'fft' array,
+    #    examine how it's structured.
+    #    Poke around with boolean masks
+    #       https://jakevdp.github.io/PythonDataScienceHandbook/02.06-boolean-arrays-and-masks.html
+    #    Change the bits thate are noted below.
 
     real=True
     #if waveset is None:
@@ -97,7 +103,7 @@ def plot_wave_mag(data,output_name="thig.png", nbins=None):
     #    these_ffts  = p49_eigen.get_ffts(stuff['cubes'], these_means, real=real)
     #    kall,waveset=p49_eigen.rotate_back(these_ffts, these_means,real=real)
     kall = data['kall']
-    waveset=data['waveset']
+    waveset=data['waveset'] #db: make this 'ffts'
     kmag = np.sqrt(kall[0,...]**2+kall[1,...]**2+kall[2,...]**2)
     if nbins is None:
         nbins = kmag.shape[0]
@@ -106,6 +112,7 @@ def plot_wave_mag(data,output_name="thig.png", nbins=None):
     bin_center = 0.5*(bins[1:]+bins[:-1])
     dig=np.digitize(kmag,bins)
     ymax=0
+    #db: put pdb.set_trace() here
     
 
     plt.clf()
@@ -116,10 +123,11 @@ def plot_wave_mag(data,output_name="thig.png", nbins=None):
     p1d['kmag']=kmag
     
     print("==== wave power ====")
+    #db: change 'f-', etc, to 'd', 'vx','vy','vz','hx','hy','hz','p'.  Might be 'px'
     color = {'f-':'r','f+':'r','s+':'g','s-':'g','a+':'b','a-':'b','c':'m'}
     line = {'f-':'--','f+':'-','s+':'-','s-':'--','a+':'-','a-':'--','c':'-'}
     for wave in  ['f-', 'a-','s-','c','f+','a+','s+']:
-        this_fft = waveset.wave_content[wave]
+        this_fft = waveset.wave_content[wave] #db: change this to be data['fft'][d,vx,vy,etc]
         p1d['ug']=this_fft
         power_complex = (this_fft*this_fft.conj())
         power=power_complex.real

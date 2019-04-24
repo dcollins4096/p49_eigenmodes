@@ -84,14 +84,14 @@ def test_mean_state(state=None):
     state.check_orthonormality()
     return state
 
-def test_two(state=None, write=False):
+def test_two(state=None, write=False, directory="./Runs", size=16):
 
     if state is None:
         state = p49_eigen.waves(hx=1.0,hy=1.41421,hz=0.5,p=0.6,this_wave="f-")
     t=miscellaneous_things()
     reload(p49_eigen)
     #two waves, one in \hat{x}, one in \hat{z}
-    k_test = nar([[1.,0.],[1.,0.],[1.,1]])
+    k_test = nar([[0.,0.],[2.,0.],[1.,1]])
 
     #amplitudes for each of the waves.
     #This ratio makes things consistent between two eigen systems, ignore it.
@@ -100,8 +100,9 @@ def test_two(state=None, write=False):
 
     #do the perturbation. 
     #write the result in *directory*
-    state.perturb(pert_shape='fft',base_size=nar([16]*3),ampl=ampl,directory="./Runs",
-                          wave="f-",k_rot=k_test,write=write,single_wave_selector=True)
+    state.perturb(pert_shape='fft',base_size=nar([size]*3),ampl=ampl,directory=directory,
+                          wave="f-",k_rot=k_test,write=write,single_wave_selector=True, 
+                          file_suffix="_%d"%size)
 
     
 
@@ -127,13 +128,13 @@ def test_two(state=None, write=False):
         print( t.form_s%q+ p49_plot_tools.mean_min_max(state.cubes[q]))
     return state
 
-def test_read_ics(ic_dir="./Runs", plot_dir="./Plots/"):
+def test_read_ics(ic_dir="./Runs", plot_dir="./Plots/",file_suffix="_16"):
     """read in initial conditions from *ic_dir*.
     Make some plots in *plot_dir*
     p49_plot_tools.read_initial_conditions consumes the initial data files in *ic_dir*
     p49_plot_tools.do_stuff makes several figures, based on the arguments.
     Here we use a fun trick of double-asterisk to pass in a bunch of keyword args."""
-    data = p49_plot_tools.read_initial_conditions(ic_dir)
+    data = p49_plot_tools.read_initial_conditions(ic_dir,file_suffix=file_suffix )
     analysis={'print_wave':True,  #prints the wave content to the screen.
               'plot_fields':True, #makes slices (or something) of density, velocity, etc.
               'k_func':p49_plot_tools.maxis,     #The projection function for the above.
@@ -163,8 +164,8 @@ def test_read_outputs(data_dir="./Runs",plot_dir="./Plots",frame=0):
     p49_plot_tools.do_stuff(data,outdir="%s/%s_%04d_"%(this_plot_dir,prefix,frame),**analysis)
     return data
 #state = test_mean_state()
-#state = test_two(write=True)
-#test_read_ics()
+#state = test_two(write=True, directory="../r100_f-_k111_64/", size=64)
+#test_read_ics(ic_dir="../r100_f-_k111_64/", plot_dir="../p100_f-_k111_64/", file_suffix="_64")
 #print("Next copy Turb.16.eigen and enzo.exe to Runs")
 #print("then run")
 #test_read_outputs()

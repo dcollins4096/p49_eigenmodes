@@ -59,9 +59,9 @@ def wrap_faces(array,field):
 #def to_ft(fields,mean={}):
 #    field_list = ['d','vx','vy','vz','hx','hy','hz','p']
 #    for field in 
-def make_k_freqs_2d(nk):
+def make_k_freqs_2d(nk, d=1):
     k_freq = np.zeros([2,nk,nk])
-    k1=np.fft.fftfreq(nk,d=1)
+    k1=np.fft.fftfreq(nk,d=d)
     #kx, ky, kz = np.meshgrid(k1,k1,k1)
     #k_freq[0,...]=kx
     #k_freq[1,...]=ky
@@ -502,7 +502,7 @@ class waves():
             return self.quan
 
     def perturb(self,k_rot=None,base_size=None,ampl=1e-6,directory=".", write=True, wave=None, pert_shape='fft',
-                  start=True, real_fft=True,single_wave_selector=True):
+                  start=True, real_fft=True,single_wave_selector=True, file_suffix="_16"):
 
 
         field_list = ['d','px','py','pz','hx','hy','hz','e']
@@ -619,7 +619,7 @@ class waves():
             #self.cubes[map_to_label[field]] = wrap_faces(self.cubes[map_to_label[field]], field)
             if self.HydroMethod == 6:
                 wrap_faces(self.cubes[field], field)
-            this_filename = "%s/%s_16.h5"%(directory,map_to_label[field])
+            this_filename = "%s/%s%s.h5"%(directory,map_to_label[field], file_suffix)
             #if field in ['px','py','pz','e']:
             #    vel_field = vp[field]
             #    self.cubes[map_to_label[vel_field]] = self.cubes[map_to_label['d']]self.cubes[map_to_label['d']]
@@ -706,6 +706,10 @@ class waves():
         self.ca = ca
         self.cs = cs
         self.aa = aa
+        self.bp = bp
+        self.bx = bx
+        self.by = by
+        self.bz = bz
         #the vectors
         right={}
         left={}
