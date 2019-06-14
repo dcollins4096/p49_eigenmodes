@@ -1,8 +1,4 @@
-from go import *
-if '/home/dcollins/repos/p49c/p49_eigenmodes' not in sys.path:
-    sys.path.append('/home/dcollins/repos/p49c/p49_eigenmodes')
-if './p49c' not in sys.path:
-    sys.path.append('./p49c')
+from go_lite_pyt3 import *
 
 import p49_eigen
 reload(p49_eigen)
